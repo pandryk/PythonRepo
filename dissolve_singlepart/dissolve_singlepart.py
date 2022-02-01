@@ -21,16 +21,20 @@
  *                                                                         *
  ***************************************************************************/
 """
+import os.path
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
+from qgis.core import QgsProject
 
 # Initialize Qt resources from file resources.py
-from .resources import *
 # Import the code for the dialog
-from .dissolve_singlepart_dialog import DissolveSinglepartDialog
-import os.path
-
+if __name__ == "__main__":
+    from resources import * # kropka
+    from dissolve_singlepart_dialog import DissolveSinglepartDialog
+else:
+    from .resources import *
+    from .dissolve_singlepart_dialog import DissolveSinglepartDialog
 
 class DissolveSinglepart:
     """QGIS Plugin Implementation."""
@@ -149,7 +153,7 @@ class DissolveSinglepart:
             self.iface.addToolBarIcon(action)
 
         if add_to_menu:
-            self.iface.addPluginToMenu(
+            self.iface.addPluginToVectorMenu(
                 self.menu,
                 action)
 
@@ -188,6 +192,11 @@ class DissolveSinglepart:
         if self.first_start == True:
             self.first_start = False
             self.dlg = DissolveSinglepartDialog()
+
+        # Populate layersComboBox
+        layers = QgsProject.instance().layerTreeRoot().children()
+        self.dlg.layerComboBox.clear()
+        self.dlg.layerComboBox.addItems([layer.name() for layer in layers])
 
         # show the dialog
         self.dlg.show()
