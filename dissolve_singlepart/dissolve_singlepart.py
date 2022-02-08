@@ -22,22 +22,32 @@
  ***************************************************************************/
 """
 import os.path
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtCore import (
+    QSettings,
+    QTranslator,
+    QCoreApplication,
+    Qt)
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject
+from qgis.PyQt.QtWidgets import QAction, QListWidgetItem
+from qgis.core import (
+    QgsProject,
+    QgsVectorLayer,
+    QgsWkbTypes
+)
 
 # Initialize Qt resources from file resources.py
 # Import the code for the dialog
 if __name__ == "__main__":
-    from resources import * # kropka
+    from resources import *  # kropka
     from dissolve_singlepart_dialog import DissolveSinglepartDialog
 else:
     from .resources import *
     from .dissolve_singlepart_dialog import DissolveSinglepartDialog
 
+
 class DissolveSinglepart:
     """QGIS Plugin Implementation."""
+    ComboMapDict = {}
 
     def __init__(self, iface):
         """Constructor.
@@ -70,6 +80,7 @@ class DissolveSinglepart:
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
+        self.dlg = DissolveSinglepartDialog()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -86,18 +97,17 @@ class DissolveSinglepart:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('DissolveSinglepart', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -174,7 +184,6 @@ class DissolveSinglepart:
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -183,18 +192,44 @@ class DissolveSinglepart:
                 action)
             self.iface.removeToolBarIcon(action)
 
+    def layer_combobox_changed(self):
+        self.dlg.fieldsListWidget.clear()
+        index = self.dlg.layerComboBox.currentIndex()
+        if len(self.ComboMapDict) == 0 or index == -1:
+            return
+
+        layer = QgsProject.instance().mapLayer(self.ComboMapDict[index])
+        if layer is None:
+            return
+
+        fields = [field for field in layer.fields()]
+        fields.sort(key=lambda x: x.name())
+
+        for field in fields:
+            list_item = QListWidgetItem(field.name())
+            list_item.setFlags(list_item.flags() | Qt.ItemIsUserCheckable)
+            list_item.setCheckState(Qt.Unchecked)
+            self.dlg.fieldsListWidget.addItem(list_item)
 
     def run(self):
         """Run method that performs all the real work"""
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
+        if self.first_start:
             self.first_start = False
-            self.dlg = DissolveSinglepartDialog()
+            self.dlg.layerComboBox.currentIndexChanged.connect(self.layer_combobox_changed)
 
         # Populate layersComboBox
-        layers = QgsProject.instance().layerTreeRoot().children()
+        layers = [layer for layer in QgsProject.instance().mapLayers(True).values()
+                  if isinstance(layer, QgsVectorLayer) and layer.geometryType() in
+                  (QgsWkbTypes.LineGeometry, QgsWkbTypes.PolygonGeometry)
+                  ]
+
+        # Mapping of combo box index and layer id
+        for i in range(len(layers)):
+            self.ComboMapDict[i] = layers[i].id()
+
         self.dlg.layerComboBox.clear()
         self.dlg.layerComboBox.addItems([layer.name() for layer in layers])
 

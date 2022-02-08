@@ -10,7 +10,7 @@ version=0.1
 author=Piotr Andryk
 email=andryk.p@wp.pl
 
-about=Existing QGIS Dissolve functions allow dissolving objects based on shared attribute. As a result you receive a new layer with multipart objects. Dissolve Singlepart plugin dissolves only connected objects. Thus, as a result you receive a layer with singlepart objects. However, you can obtain a similar result, by using Dissolve, and then Multipart to Singlepart, you would lose unique attributes of dissolved objects. Dissolve Singlepart solves that problem.
+about=Existing QGIS Dissolve functions allow dissolving objects based on shared attribute. As a result you receive a new layer with multipart objects. Dissolve Singlepart plugin dissolves only connected objects. Thus, as a result you receive a layer with singlepart objects.
 
 tracker=http://bugs
 repository=http://repo
