@@ -40,9 +40,11 @@ from qgis.core import (
 if __name__ == "__main__":
     from resources import *  # kropka
     from dissolve_singlepart_dialog import DissolveSinglepartDialog
+    from dissolve_singlepart_core import DissolveSinglepartCore
 else:
     from .resources import *
     from .dissolve_singlepart_dialog import DissolveSinglepartDialog
+    from .dissolve_singlepart_core import DissolveSinglepartCore
 
 
 class DissolveSinglepart:
@@ -171,6 +173,7 @@ class DissolveSinglepart:
 
         return action
 
+    # noinspection PyPep8Naming
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
@@ -192,7 +195,7 @@ class DissolveSinglepart:
                 action)
             self.iface.removeToolBarIcon(action)
 
-    def layer_combobox_changed(self):
+    def layerComboBoxChanged(self):
         self.dlg.fieldsListWidget.clear()
         index = self.dlg.layerComboBox.currentIndex()
         if len(self.ComboMapDict) == 0 or index == -1:
@@ -206,21 +209,12 @@ class DissolveSinglepart:
         fields.sort(key=lambda x: x.name())
 
         for field in fields:
-            list_item = QListWidgetItem(field.name())
-            list_item.setFlags(list_item.flags() | Qt.ItemIsUserCheckable)
-            list_item.setCheckState(Qt.Unchecked)
-            self.dlg.fieldsListWidget.addItem(list_item)
+            listItem = QListWidgetItem(field.name())
+            listItem.setFlags(listItem.flags() | Qt.ItemIsUserCheckable)
+            listItem.setCheckState(Qt.Unchecked)
+            self.dlg.fieldsListWidget.addItem(listItem)
 
-    def run(self):
-        """Run method that performs all the real work"""
-
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start:
-            self.first_start = False
-            self.dlg.layerComboBox.currentIndexChanged.connect(self.layer_combobox_changed)
-
-        # Populate layersComboBox
+    def prepareLayersComboBox(self):
         layers = [layer for layer in QgsProject.instance().mapLayers(True).values()
                   if isinstance(layer, QgsVectorLayer) and layer.geometryType() in
                   (QgsWkbTypes.LineGeometry, QgsWkbTypes.PolygonGeometry)
@@ -233,12 +227,53 @@ class DissolveSinglepart:
         self.dlg.layerComboBox.clear()
         self.dlg.layerComboBox.addItems([layer.name() for layer in layers])
 
+    def buildDissolveSinglepartCore(self):
+        # Get parameters for core algorithms
+        name = self.dlg.outputLayerNameTextEdit.toPlainText().strip()
+        if name == "":
+            return
+
+        layer = QgsProject.instance().mapLayer(self.ComboMapDict[self.dlg.layerComboBox.currentIndex()])
+        if layer is None:
+            return
+
+        fieldNames = []
+        for i in range(self.dlg.fieldsListWidget.count()):
+            item = self.dlg.fieldsListWidget.item(i)
+            if item.checkState() == Qt.Checked:
+                fieldNames.append(item.text())
+
+        if len(fieldNames) == 0:
+            return
+
+        return DissolveSinglepartCore(layer, fieldNames, name)
+
+    def run(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start:
+            self.first_start = False
+            self.dlg.layerComboBox.currentIndexChanged.connect(self.layerComboBoxChanged)
+
+        # Populate layersComboBox
+        self.prepareLayersComboBox()
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+
+        if not result:
+            return
+
+        pluginCore = self.buildDissolveSinglepartCore()
+        if pluginCore is None:
+            return
+
+        pluginCore.execute()
+
+        if pluginCore.outputLayer.isValid():
+            QgsProject.instance().addMapLayer(pluginCore.outputLayer)
