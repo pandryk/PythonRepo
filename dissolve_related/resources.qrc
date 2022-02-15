@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/dissolve_singlepart" >
+    <qresource prefix="/plugins/dissolve_related" >
         <file>icon.png</file>
     </qresource>
 </RCC>

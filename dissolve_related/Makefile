@@ -1,5 +1,5 @@
 #/***************************************************************************
-# DissolveSinglepart
+# DissolveRelated
 #
 # This plugn allows to dissolve only connected objects
 #							 -------------------
@@ -38,15 +38,15 @@ LOCALES =
 # translation
 SOURCES = \
 	__init__.py \
-	dissolve_singlepart.py dissolve_singlepart_dialog.py
+	dissolve_related.py dissolve_related_dialog.py
 
-PLUGINNAME = dissolve_singlepart
+PLUGINNAME = dissolve_related
 
 PY_FILES = \
 	__init__.py \
-	dissolve_singlepart.py dissolve_singlepart_dialog.py
+	dissolve_related.py dissolve_related_dialog.py
 
-UI_FILES = dissolve_singlepart_dialog_base.ui
+UI_FILES = dissolve_related_dialog_base.ui
 
 EXTRAS = metadata.txt icon.png
 

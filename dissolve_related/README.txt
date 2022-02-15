@@ -1,7 +1,7 @@
 Plugin Builder Results
 
-Your plugin DissolveSinglepart was created in:
-    C:/Users/andry/PycharmProjects/PythonRepo\dissolve_singlepart
+Your plugin DissolveRelated was created in:
+    C:/Users/andry/PycharmProjects/PythonRepo\dissolve_related
 
 Your QGIS plugin directory is located at:
     C:/Users/andry/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
@@ -17,11 +17,11 @@ What's Next:
 
   * Test the plugin by enabling it in the QGIS plugin manager
 
-  * Customize it by editing the implementation file: ``dissolve_singlepart.py``
+  * Customize it by editing the implementation file: ``dissolve_related.py``
 
   * Create your own custom icon, replacing the default icon.png
 
-  * Modify your user interface by opening DissolveSinglepart_dialog_base.ui in Qt Designer
+  * Modify your user interface by opening DissolveRelated_dialog_base.ui in Qt Designer
 
   * You can use the Makefile to compile your Ui and resource files when
     you make changes. This requires GNU make (gmake)
