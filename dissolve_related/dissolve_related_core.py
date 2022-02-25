@@ -84,6 +84,7 @@ class DissolveRelatedCore:
             sourceID = shapeSource.id()
             engine = QgsGeometry.createGeometryEngine(shapeSource.geometry().constGet())
             engine.prepareGeometry()
+
             for shapeRelate in self.inputLayer.getFeatures():
                 relateID = shapeRelate.id()
                 if (sourceID == relateID) or (self.isInRelation(sourceID, relateID)):
@@ -138,6 +139,56 @@ class DissolveRelatedCore:
                                 = self.relationsDict[relateParentID] + self.relationsDict[sourceParentID]
                             self.relationsDict.pop(sourceParentID)
 
+    def createFeature(self, geometry):
+        feature = QgsFeature(self.outputLayer.fields())
+        if feature is None:
+            return
+
+        feature.setGeometry(geometry)
+        return feature
+
+    def dissolveFeatures(self):
+        newFeaturesList = []
+        self.outputLayer.beginEditCommand("Dissolving features...")
+        try:
+            for key in self.relationsDict.keys():
+                relatedGeometryList = []
+                sourceFeature = self.outputLayer.getFeature(key)
+                if sourceFeature is None:
+                    continue
+
+                sourceGeometry = sourceFeature.geometry()
+                if sourceGeometry is None:
+                    continue
+
+                for relatedID in self.relationsDict[key]:
+                    relatedFeature = self.outputLayer.getFeature(relatedID)
+                    if relatedFeature is None:
+                        continue
+
+                    relatedGeometry = relatedFeature.geometry()
+                    if relatedGeometry is None:
+                        continue
+
+                    relatedGeometryList.append(relatedGeometry)
+
+                engine = QgsGeometry.createGeometryEngine(sourceGeometry.constGet())
+                engine.prepareGeometry()
+                newGeometry = engine.combine(relatedGeometryList)
+                if newGeometry is None:
+                    continue
+
+                newFeature = self.createFeature(newGeometry)
+                if newFeature is None:
+                    continue
+
+                newFeaturesList.append(newFeature)
+            self.outputLayer.dataProvider().deleteFeatures(self.getDictKeyValueList())
+            self.outputLayer.dataProvider().addFeatures(newFeaturesList)
+        finally:
+            self.outputLayer.commitChanges()
+
     def execute(self):
         self.copyFeatures()
         self.getRelations()
+        self.dissolveFeatures()
