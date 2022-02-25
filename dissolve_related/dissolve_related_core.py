@@ -157,22 +157,14 @@ class DissolveRelatedCore:
         self.outputLayer.beginEditCommand("Dissolving features...")
         try:
             for key in self.relationsDict.keys():
-                sourceFeature = self.outputLayer.getFeature(key)
-                if sourceFeature is None:
-                    continue
-
-                sourceGeometry = sourceFeature.geometry()
+                sourceGeometry = self.outputLayer.getGeometry(key)
                 if sourceGeometry is None:
                     continue
 
                 relatedGeometryList = [sourceGeometry]
 
                 for relatedID in self.relationsDict[key]:
-                    relatedFeature = self.outputLayer.getFeature(relatedID)
-                    if relatedFeature is None:
-                        continue
-
-                    relatedGeometry = relatedFeature.geometry()
+                    relatedGeometry = self.outputLayer.getGeometry(relatedID)
                     if relatedGeometry is None:
                         continue
 
