@@ -79,13 +79,12 @@ class DissolveRelatedCore:
             return resultList
 
     def getRelations(self):
-        length = 0
-        for shapeSource in self.inputLayer.getFeatures():
+        for shapeSource in self.outputLayer.getFeatures():
             sourceID = shapeSource.id()
             engine = QgsGeometry.createGeometryEngine(shapeSource.geometry().constGet())
             engine.prepareGeometry()
 
-            for shapeRelate in self.inputLayer.getFeatures():
+            for shapeRelate in self.outputLayer.getFeatures():
                 relateID = shapeRelate.id()
                 if (sourceID == relateID) or (self.isInRelation(sourceID, relateID)):
                     continue
@@ -112,13 +111,16 @@ class DissolveRelatedCore:
                             self.relationsDict[sourceID].append(relateID)
                         # If related is used as source, append related with its relation
                         elif relateID in self.relationsDict.keys():
-                            self.relationsDict[sourceID] = self.relationsDict[sourceID] + self.relationsDict[relateID]
+                            self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
+                                self.relationsDict[relateID] + \
+                                [relateID]
                             self.relationsDict.pop(relateID)
                         # If related used as related, append parent of its relation
                         else:
                             relateParentID = self.getKey(relateID)
-                            self.relationsDict[sourceID] = \
-                                self.relationsDict[sourceID] + self.relationsDict[relateParentID]
+                            self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
+                                self.relationsDict[relateParentID] + \
+                                [relateParentID]
                             self.relationsDict.pop(relateParentID)
                     # If source is used as related
                     else:
@@ -128,15 +130,18 @@ class DissolveRelatedCore:
                         # If related is used as source, append parent of source with its relation
                         elif relateID in self.relationsDict.keys():
                             sourceParentID = self.getKey(sourceID)
-                            self.relationsDict[relateID] = \
-                                self.relationsDict[relateID] + self.relationsDict[sourceParentID]
+                            self.relationsDict[relateID] = self.relationsDict[relateID] + \
+                                self.relationsDict[sourceParentID] + \
+                                [sourceParentID]
                             self.relationsDict.pop(sourceParentID)
                         # If related is used as related, append parent of source with its relation to that relation
                         else:
                             sourceParentID = self.getKey(sourceID)
                             relateParentID = self.getKey(relateID)
-                            self.relationsDict[relateParentID] \
-                                = self.relationsDict[relateParentID] + self.relationsDict[sourceParentID]
+                            self.relationsDict[relateParentID] = \
+                                self.relationsDict[relateParentID] + \
+                                self.relationsDict[sourceParentID] + \
+                                [sourceParentID]
                             self.relationsDict.pop(sourceParentID)
 
     def createFeature(self, geometry):
@@ -152,7 +157,6 @@ class DissolveRelatedCore:
         self.outputLayer.beginEditCommand("Dissolving features...")
         try:
             for key in self.relationsDict.keys():
-                relatedGeometryList = []
                 sourceFeature = self.outputLayer.getFeature(key)
                 if sourceFeature is None:
                     continue
@@ -160,6 +164,8 @@ class DissolveRelatedCore:
                 sourceGeometry = sourceFeature.geometry()
                 if sourceGeometry is None:
                     continue
+
+                relatedGeometryList = [sourceGeometry]
 
                 for relatedID in self.relationsDict[key]:
                     relatedFeature = self.outputLayer.getFeature(relatedID)
