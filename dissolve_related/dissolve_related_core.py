@@ -21,7 +21,7 @@ from qgis.core import (
 
 
 class DissolveRelatedCore:
-    def __init__(self, inputLayer, fieldNames, outputLayerName):
+    def __init__(self, inputLayer, fieldNames, outputLayerName, progress):
         self.inputLayer = inputLayer
         self.fieldNames = fieldNames
         self.relationsDict = {}
@@ -31,9 +31,11 @@ class DissolveRelatedCore:
             "memory",
             crs=inputLayer.crs()
         )
+        self.progress = progress
 
     def copyFeatures(self):
         self.outputLayer.dataProvider().addAttributes(self.inputLayer.fields())
+        self.progress.setMaximum(self.inputLayer.featureCount())
 
         features = []
         for feature in self.inputLayer.getFeatures():
@@ -45,6 +47,7 @@ class DissolveRelatedCore:
                 newFeature[field.name()] = feature[field.name()]
 
             features.append(newFeature)
+            self.progress.setValue(self.progress.value() + 1)
 
         self.outputLayer.startEditing()
         self.outputLayer.dataProvider().addFeatures(features)
@@ -89,6 +92,7 @@ class DissolveRelatedCore:
             return resultList
 
     def getRelations(self):
+        self.progress.setValue(0)
         for shapeSource in self.outputLayer.getFeatures():
             sourceID = shapeSource.id()
             engine = QgsGeometry.createGeometryEngine(shapeSource.geometry().constGet())
@@ -155,6 +159,8 @@ class DissolveRelatedCore:
                                 [sourceParentID]
                             self.relationsDict.pop(sourceParentID)
 
+                self.progress.setValue(self.progress.value() + 1)
+
     def createFeature(self, geometry, sourceFeature):
         feature = QgsFeature(self.outputLayer.fields())
         if feature is None:
@@ -170,32 +176,39 @@ class DissolveRelatedCore:
         newFeaturesList = []
         self.outputLayer.beginEditCommand("Dissolving features...")
         try:
+            self.progress.setValue(0)
+            self.progress.setMaximum(len(self.relationsDict))
+
             for key in self.relationsDict.keys():
-                sourceFeature = self.outputLayer.getFeature(key)
-                sourceGeometry = self.outputLayer.getGeometry(key)
-                if sourceGeometry is None:
-                    continue
-
-                relatedGeometryList = [sourceGeometry]
-
-                for relatedID in self.relationsDict[key]:
-                    relatedGeometry = self.outputLayer.getGeometry(relatedID)
-                    if relatedGeometry is None:
+                try:
+                    sourceFeature = self.outputLayer.getFeature(key)
+                    sourceGeometry = self.outputLayer.getGeometry(key)
+                    if sourceGeometry is None:
                         continue
 
-                    relatedGeometryList.append(relatedGeometry)
+                    relatedGeometryList = [sourceGeometry]
 
-                engine = QgsGeometry.createGeometryEngine(sourceGeometry.constGet())
-                engine.prepareGeometry()
-                newGeometry = engine.combine(relatedGeometryList)
-                if newGeometry is None:
-                    continue
+                    for relatedID in self.relationsDict[key]:
+                        relatedGeometry = self.outputLayer.getGeometry(relatedID)
+                        if relatedGeometry is None:
+                            continue
 
-                newFeature = self.createFeature(newGeometry, sourceFeature)
-                if newFeature is None:
-                    continue
+                        relatedGeometryList.append(relatedGeometry)
 
-                newFeaturesList.append(newFeature)
+                    engine = QgsGeometry.createGeometryEngine(sourceGeometry.constGet())
+                    engine.prepareGeometry()
+                    newGeometry = engine.combine(relatedGeometryList)
+                    if newGeometry is None:
+                        continue
+
+                    newFeature = self.createFeature(newGeometry, sourceFeature)
+                    if newFeature is None:
+                        continue
+
+                    newFeaturesList.append(newFeature)
+                finally:
+                    self.progress.setValue(self.progress.value() + 1)
+
             self.outputLayer.dataProvider().deleteFeatures(self.getDictKeyValueList())
             self.outputLayer.dataProvider().addFeatures(newFeaturesList)
         finally:

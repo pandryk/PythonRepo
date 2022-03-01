@@ -243,7 +243,7 @@ class DissolveRelated:
             if item.checkState() == Qt.Checked:
                 fieldNames.append(item.text())
 
-        return DissolveRelatedCore(layer, fieldNames, name)
+        return DissolveRelatedCore(layer, fieldNames, name, self.dlg.progressBar)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -259,6 +259,8 @@ class DissolveRelated:
 
         # Clear name
         self.dlg.outputLayerNameTextEdit.setPlainText("")
+        # Reset progress
+        self.dlg.progressBar.setValue(0)
 
         # show the dialog
         self.dlg.show()
