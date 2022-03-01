@@ -243,9 +243,6 @@ class DissolveRelated:
             if item.checkState() == Qt.Checked:
                 fieldNames.append(item.text())
 
-        if len(fieldNames) == 0:
-            return
-
         return DissolveRelatedCore(layer, fieldNames, name)
 
     def run(self):
@@ -259,6 +256,9 @@ class DissolveRelated:
 
         # Populate layersComboBox
         self.prepareLayersComboBox()
+
+        # Clear name
+        self.dlg.outputLayerNameTextEdit.setPlainText("")
 
         # show the dialog
         self.dlg.show()

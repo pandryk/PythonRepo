@@ -65,6 +65,16 @@ class DissolveRelatedCore:
                     return True
             return False
 
+    def hasSameAttributes(self, id1, id2):
+        shp1 = self.outputLayer.getFeature(id1)
+        shp2 = self.outputLayer.getFeature(id2)
+
+        for field in self.fieldNames:
+            if shp1[field] != shp2[field]:
+                return False
+
+        return True
+
     def getDictKeyValueList(self):
         resultList = []
         try:
@@ -86,7 +96,8 @@ class DissolveRelatedCore:
 
             for shapeRelate in self.outputLayer.getFeatures():
                 relateID = shapeRelate.id()
-                if (sourceID == relateID) or (self.isInRelation(sourceID, relateID)):
+                if (sourceID == relateID) or (self.isInRelation(sourceID, relateID)) or \
+                        (self.hasSameAttributes(sourceID, relateID) is False):
                     continue
 
                 # If intersected
@@ -144,10 +155,13 @@ class DissolveRelatedCore:
                                 [sourceParentID]
                             self.relationsDict.pop(sourceParentID)
 
-    def createFeature(self, geometry):
+    def createFeature(self, geometry, sourceFeature):
         feature = QgsFeature(self.outputLayer.fields())
         if feature is None:
             return
+
+        for field in self.fieldNames:
+            feature[field] = sourceFeature[field]
 
         feature.setGeometry(geometry)
         return feature
@@ -157,6 +171,7 @@ class DissolveRelatedCore:
         self.outputLayer.beginEditCommand("Dissolving features...")
         try:
             for key in self.relationsDict.keys():
+                sourceFeature = self.outputLayer.getFeature(key)
                 sourceGeometry = self.outputLayer.getGeometry(key)
                 if sourceGeometry is None:
                     continue
@@ -176,7 +191,7 @@ class DissolveRelatedCore:
                 if newGeometry is None:
                     continue
 
-                newFeature = self.createFeature(newGeometry)
+                newFeature = self.createFeature(newGeometry, sourceFeature)
                 if newFeature is None:
                     continue
 
