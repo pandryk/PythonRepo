@@ -6,7 +6,7 @@
 name=Dissolve Related
 qgisMinimumVersion=3.0
 description=This plugin allows dissolving only connected objects
-version=0.1
+version=1.0
 author=Piotr Andryk
 email=andryk.p@wp.pl
 
