@@ -6,7 +6,7 @@
 name=Dissolve Related
 qgisMinimumVersion=3.0
 description=This plugin allows dissolving only connected objects
-version=1.0
+version=1.1
 author=Piotr Andryk
 email=andryk.p@wp.pl
 
@@ -20,7 +20,7 @@ repository=https://github.com/pandryk/PythonRepo/tree/main/dissolve_related
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-# changelog=
+changelog=1.1 </br> - OK button changed to Apply button. </br> - Report of algorithm success on message bar.
 
 # Tags are comma separated with spaces allowed
 tags=python,analysis,dissolve,merge,attribute

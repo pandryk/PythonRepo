@@ -30,6 +30,7 @@ from qgis.PyQt.QtCore import (
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QListWidgetItem, QDialogButtonBox
 from qgis.core import (
+    Qgis,
     QgsProject,
     QgsVectorLayer,
     QgsWkbTypes
@@ -254,6 +255,11 @@ class DissolveRelated:
 
         if pluginCore.outputLayer.isValid():
             QgsProject.instance().addMapLayer(pluginCore.outputLayer)
+
+        self.iface.messageBar().pushMessage("Success!",
+                                            "Dissolve Related algorithm has been completed!",
+                                            level=Qgis.Success
+                                            )
 
     def run(self):
         """Run method that performs all the real work"""
