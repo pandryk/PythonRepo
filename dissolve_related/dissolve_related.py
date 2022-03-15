@@ -28,7 +28,7 @@ from qgis.PyQt.QtCore import (
     QCoreApplication,
     Qt)
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QListWidgetItem
+from qgis.PyQt.QtWidgets import QAction, QListWidgetItem, QDialogButtonBox
 from qgis.core import (
     QgsProject,
     QgsVectorLayer,
@@ -245,6 +245,16 @@ class DissolveRelated:
 
         return DissolveRelatedCore(layer, fieldNames, name, self.dlg.progressBar)
 
+    def executeCore(self):
+        pluginCore = self.buildDissolveRelatedCore()
+        if pluginCore is None:
+            return
+
+        pluginCore.execute()
+
+        if pluginCore.outputLayer.isValid():
+            QgsProject.instance().addMapLayer(pluginCore.outputLayer)
+
     def run(self):
         """Run method that performs all the real work"""
 
@@ -253,6 +263,7 @@ class DissolveRelated:
         if self.first_start:
             self.first_start = False
             self.dlg.layerComboBox.currentIndexChanged.connect(self.layerComboBoxChanged)
+            self.dlg.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.executeCore)
 
         # Populate layersComboBox
         self.prepareLayersComboBox()
@@ -265,17 +276,5 @@ class DissolveRelated:
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
-        # See if OK was pressed
 
-        if not result:
-            return
-
-        pluginCore = self.buildDissolveRelatedCore()
-        if pluginCore is None:
-            return
-
-        pluginCore.execute()
-
-        if pluginCore.outputLayer.isValid():
-            QgsProject.instance().addMapLayer(pluginCore.outputLayer)
+        self.dlg.exec_()
