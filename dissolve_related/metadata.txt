@@ -12,8 +12,8 @@ email=andryk.p@wp.pl
 
 about=Existing QGIS Dissolve functions allow dissolving objects based on shared attribute. As a result you receive a new layer with multipart objects. Dissolve Related plugin dissolves only connected features. Thus, as a result you receive a layer, where only connected features are dissolved. The rest of features are intact - even if they share attribute values.
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/pandryk/PythonRepo/issues
+repository=https://github.com/pandryk/PythonRepo/tree/main/dissolve_related
 # End of mandatory metadata
 
 # Recommended items:
@@ -23,9 +23,9 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=python,analysis,dissolve,merge,attribute
 
-homepage=http://homepage
+homepage=https://github.com/pandryk/PythonRepo
 category=Vector
 icon=icon.png
 # experimental flag
