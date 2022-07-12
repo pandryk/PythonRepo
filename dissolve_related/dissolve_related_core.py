@@ -21,7 +21,7 @@ from qgis.core import (
 
 
 class DissolveRelatedCore:
-    def __init__(self, inputLayer, fieldNames, outputLayerName, progress):
+    def __init__(self, inputLayer, fieldNames, outputLayerName, splitArcs, progress):
         self.inputLayer = inputLayer
         self.fieldNames = fieldNames
         self.relationsDict = {}
@@ -31,6 +31,7 @@ class DissolveRelatedCore:
             "memory",
             crs=inputLayer.crs()
         )
+        self.splitArcs = splitArcs
         self.progress = progress
 
     def copyFeatures(self):

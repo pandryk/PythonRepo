@@ -244,7 +244,13 @@ class DissolveRelated:
             if item.checkState() == Qt.Checked:
                 fieldNames.append(item.text())
 
-        return DissolveRelatedCore(layer, fieldNames, name, self.dlg.progressBar)
+            # Keep arcs singlepart
+            if (keepSinglepartCheckBox.isChecked() is True) and (layer.geometryType() == QgsWkbTypes.LineGeometry):
+                keepSinglepart = True
+            else:
+                keepSinglepart = False
+
+        return DissolveRelatedCore(layer, fieldNames, name, keepSinglepart, self.dlg.progressBar)
 
     def executeCore(self):
         pluginCore = self.buildDissolveRelatedCore()

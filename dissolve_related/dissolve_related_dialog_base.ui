@@ -51,7 +51,7 @@
    <property name="geometry">
     <rect>
      <x>110</x>
-     <y>40</y>
+     <y>20</y>
      <width>261</width>
      <height>21</height>
     </rect>
@@ -61,7 +61,7 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>40</y>
+     <y>20</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -132,6 +132,25 @@
     <number>24</number>
    </property>
    <property name="textVisible">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="keepSinglepartCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>50</y>
+     <width>121</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::RightToLeft</enum>
+   </property>
+   <property name="text">
+    <string>Keep arcs singlepart:</string>
+   </property>
+   <property name="checked">
     <bool>false</bool>
    </property>
   </widget>
