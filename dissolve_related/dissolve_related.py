@@ -245,7 +245,7 @@ class DissolveRelated:
                 fieldNames.append(item.text())
 
             # Keep arcs singlepart
-            if (keepSinglepartCheckBox.isChecked() is True) and (layer.geometryType() == QgsWkbTypes.LineGeometry):
+            if self.dlg.keepSinglepartCheckBox.isChecked() and (layer.geometryType() == QgsWkbTypes.LineGeometry):
                 keepSinglepart = True
             else:
                 keepSinglepart = False
