@@ -20,6 +20,19 @@ from qgis.core import (
 )
 
 
+class Node:
+    def __init__(self, id, point, node=None):
+        self.id = id
+        self.point = point
+        self.node = node
+
+
+class FeatureHelper:
+    def __init__(self, id):
+        self.id = id
+        self.nodeList = []
+
+
 class DissolveRelatedCore:
     def __init__(self, inputLayer, fieldNames, outputLayerName, splitArcs, progress):
         self.inputLayer = inputLayer
@@ -92,8 +105,7 @@ class DissolveRelatedCore:
         finally:
             return resultList
 
-    def getRelations(self):
-        self.progress.setValue(0)
+    def getMultipartRelations(self):
         for shapeSource in self.outputLayer.getFeatures():
             sourceID = shapeSource.id()
             engine = QgsGeometry.createGeometryEngine(shapeSource.geometry().constGet())
@@ -161,6 +173,119 @@ class DissolveRelatedCore:
                             self.relationsDict.pop(sourceParentID)
 
                 self.progress.setValue(self.progress.value() + 1)
+
+    def createFeatureHelper(self, dictHelper, shape):
+        shapeID = shape.id()
+        featureHelper = FeatureHelper(shapeID)
+        dictHelper[shapeID] = featureHelper
+        geometry = shape.geometry()
+
+        for part in geometry.parts():
+            featureHelper.nodeList.append(Node(shapeID, part[0]))
+            featureHelper.nodeList.append(Node(shapeID, part[-1]))
+
+        return featureHelper
+
+    def wrapRelationsDict(self):
+        popList = []
+
+        for key1 in self.relationsDict.keys():
+            for value1 in self.relationsDict[key1]:
+                if value1 in self.relationsDict.keys():
+                    for value2 in self.relationsDict[value1]:
+                        if value2 not in self.relationsDict[key1]:
+                            self.relationsDict[key1].append(value2)
+
+                    self.relationsDict[value1].clear()
+
+                for key2 in self.relationsDict.keys():
+                    if key1 == key2:
+                        continue
+
+                    if value1 in self.relationsDict[key2]:
+                        if key2 not in self.relationsDict[key1]:
+                            self.relationsDict[key1].append(key2)
+
+                        for value2 in self.relationsDict[key2]:
+                            if value2 not in self.relationsDict[key1]:
+                                self.relationsDict[key1].append(value2)
+
+                        self.relationsDict[key2].clear()
+
+        for key in self.relationsDict.keys():
+            if len(self.relationsDict[key]) == 0:
+                popList.append(key)
+
+        for key in popList:
+            if key in self.relationsDict.keys():
+                self.relationsDict.pop(key)
+
+    def getSinglepartRelations(self):
+        featuresHelperDict = {}
+        for shapeSource in self.outputLayer.getFeatures():
+            sourceID = shapeSource.id()
+
+            if sourceID not in featuresHelperDict.keys():
+                featureHelperSource = self.createFeatureHelper(featuresHelperDict, shapeSource)
+            else:
+                featureHelperSource = featuresHelperDict[sourceID]
+
+            engine = QgsGeometry.createGeometryEngine(shapeSource.geometry().constGet())
+            engine.prepareGeometry()
+
+            for shapeRelate in self.outputLayer.getFeatures():
+                relateID = shapeRelate.id()
+                if sourceID == relateID:
+                    continue
+
+                if relateID not in featuresHelperDict.keys():
+                    featureHelperRelate = self.createFeatureHelper(featuresHelperDict, shapeRelate)
+                else:
+                    featureHelperRelate = featuresHelperDict[relateID]
+
+                intersect = engine.intersection(shapeRelate.geometry().constGet())
+                if intersect is None:
+                    continue
+
+                for node1 in featureHelperSource.nodeList:
+                    if (node1.node is None) and (node1.point == intersect):
+                        for node2 in featureHelperRelate.nodeList:
+                            if (node2.node is None) and (node2.point == intersect):
+                                node1.node = node2
+                                node2.node = node1
+
+        for featureHelper in featuresHelperDict.values():
+            for node in featureHelper.nodeList:
+                if node.node is None:
+                    continue
+
+                if node.id not in self.getDictKeyValueList():
+                    self.relationsDict[node.id] = []
+
+                if node.id not in self.relationsDict.keys():
+                    continue
+
+                self.extractNodeRelations(node.id, node.node, self.relationsDict[node.id], featuresHelperDict)
+
+        self.wrapRelationsDict()
+
+    def extractNodeRelations(self, coreID, node, relationsList, featuresHelperDict):
+        if node.id not in relationsList:
+            relationsList.append(node.id)
+
+        featureHelper = featuresHelperDict[node.id]
+        for nodeRelate in featureHelper.nodeList:
+            if (node.node is None) or (node.node.id == coreID):
+                continue
+
+            self.extractNodeRelations(coreID, node.node, relationsList, featuresHelperDict)
+
+    def getRelations(self):
+        self.progress.setValue(0)
+        if self.splitArcs:
+            self.getSinglepartRelations()
+        else:
+            self.getMultipartRelations()
 
     def createFeature(self, geometry, sourceFeature):
         feature = QgsFeature(self.outputLayer.fields())
