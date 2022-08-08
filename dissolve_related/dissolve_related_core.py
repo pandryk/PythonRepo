@@ -207,7 +207,7 @@ class DissolveRelatedCore:
 
             for shapeRelate in self.outputLayer.getFeatures():
                 relateID = shapeRelate.id()
-                if sourceID == relateID:
+                if (sourceID == relateID) or (self.hasSameAttributes(sourceID, relateID) is False):
                     continue
 
                 if relateID not in featuresHelperDict.keys():
