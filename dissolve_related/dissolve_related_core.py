@@ -189,28 +189,34 @@ class DissolveRelatedCore:
     def wrapRelationsDict(self):
         popList = []
 
-        for key1 in self.relationsDict.keys():
-            for value1 in self.relationsDict[key1]:
-                if value1 in self.relationsDict.keys():
-                    for value2 in self.relationsDict[value1]:
-                        if value2 not in self.relationsDict[key1]:
-                            self.relationsDict[key1].append(value2)
+        # for key1 in self.relationsDict.keys():
+        #     for value1 in self.relationsDict[key1]:
+        #         if value1 in self.relationsDict.keys():
+        #             for value2 in self.relationsDict[value1]:
+        #                 if value2 not in self.relationsDict[key1]:
+        #                     self.relationsDict[key1].append(value2)
+        #
+        #             self.relationsDict[value1].clear()
+        #             continue
+        #
+        #         for key2 in self.relationsDict.keys():
+        #             if key1 == key2:
+        #                 continue
+        #
+        #             if value1 in self.relationsDict[key2]:
+        #                 if key2 not in self.relationsDict[key1]:
+        #                     self.relationsDict[key1].append(key2)
+        #
+        #                 for value2 in self.relationsDict[key2]:
+        #                     if value2 not in self.relationsDict[key1]:
+        #                         self.relationsDict[key1].append(value2)
+        #
+        #                 self.relationsDict[key2].clear()
 
-                    self.relationsDict[value1].clear()
-
-                for key2 in self.relationsDict.keys():
-                    if key1 == key2:
-                        continue
-
-                    if value1 in self.relationsDict[key2]:
-                        if key2 not in self.relationsDict[key1]:
-                            self.relationsDict[key1].append(key2)
-
-                        for value2 in self.relationsDict[key2]:
-                            if value2 not in self.relationsDict[key1]:
-                                self.relationsDict[key1].append(value2)
-
-                        self.relationsDict[key2].clear()
+        for key in self.relationsDict.keys():
+            self.relationsDict[key] = list(dict.fromkeys(self.relationsDict[key]))
+            if key in self.relationsDict[key]:
+                self.relationsDict[key].remove(key)
 
         for key in self.relationsDict.keys():
             if len(self.relationsDict[key]) == 0:
@@ -254,18 +260,52 @@ class DissolveRelatedCore:
                                 node1.node = node2
                                 node2.node = node1
 
+        # Building relationsDict based on Nodes' relations
         for featureHelper in featuresHelperDict.values():
+            self.relationsDict[featureHelper.id] = []
             for node in featureHelper.nodeList:
-                if node.node is None:
+                if node.node is None:  # No relations
                     continue
 
-                if node.id not in self.getDictKeyValueList():
-                    self.relationsDict[node.id] = []
+                # Neither of features exist in relationsDict
+                if (featureHelper.id not in self.getDictKeyValueList()) and \
+                        (node.node.id not in self.getDictKeyValueList()):
+                    self.relationsDict[featureHelper.id] = []
+                    self.relationsDict[featureHelper.id].append(node.node.id)
+                elif (featureHelper.id in self.relationsDict.keys()) and \
+                        (node.node.id not in self.getDictKeyValueList()):
+                    self.relationsDict[featureHelper.id].append(node.node.id)
+                elif (featureHelper.id not in self.getDictKeyValueList()) and \
+                        (node.node.id in self.relationsDict.keys()):
+                    self.relationsDict[node.node.id].append(featureHelper.id)
+                elif (featureHelper.id in self.relationsDict.keys()) and \
+                     (node.node.id in self.relationsDict.keys()):
+                    self.relationsDict[featureHelper.id] += self.relationsDict[node.node.id]
 
-                if node.id not in self.relationsDict.keys():
-                    continue
+                    if node.node.id not in self.relationsDict[featureHelper.id]:
+                        self.relationsDict[featureHelper.id].append(node.node.id)
+                    self.relationsDict.pop(node.node.id)
+                elif (self.getKey(featureHelper.id) is not None) and \
+                        (node.node.id in self.relationsDict.keys()):
+                    self.relationsDict[node.node.id] += self.relationsDict[self.getKey(featureHelper.id)]
 
-                self.extractNodeRelations(node.id, node.node, self.relationsDict[node.id], featuresHelperDict)
+                    if self.getKey(featureHelper.id) not in self.relationsDict[node.node.id]:
+                        self.relationsDict[node.node.id].append(self.getKey(featureHelper.id))
+
+                    self.relationsDict.pop(self.getKey(featureHelper.id))
+                elif (featureHelper.id in self.relationsDict.keys()) and \
+                        (self.getKey(node.node.id) is not None):
+                    self.relationsDict[featureHelper.id] += self.relationsDict[self.getKey(node.node.id)]
+
+                    if self.getKey(node.node.id) not in self.relationsDict[featureHelper.id]:
+                        self.relationsDict[featureHelper.id].append(self.getKey(node.node.id))
+                elif (self.getKey(featureHelper.id) is not None) and (self.getKey(node.node.id) is not None):
+                    self.relationsDict[self.getKey(featureHelper.id)] += self.relationsDict[self.getKey(node.node.id)]
+
+                    if self.getKey(node.node.id) not in self.relationsDict[self.getKey(featureHelper.id)]:
+                        self.relationsDict[self.getKey(featureHelper.id)].append(self.getKey(node.node.id))
+
+                    self.relationsDict.pop(self.getKey(node.node.id))
 
         self.wrapRelationsDict()
 
