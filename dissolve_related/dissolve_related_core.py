@@ -28,9 +28,17 @@ class Node:
 
 
 class FeatureHelper:
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, dictHelper, shape):
+        shapeID = shape.id()
+        self.id = shapeID
         self.nodeList = []
+        geometry = shape.geometry()
+
+        for part in geometry.parts():
+            self.nodeList.append(Node(shapeID, part[0]))
+            self.nodeList.append(Node(shapeID, part[-1]))
+
+        dictHelper[shapeID] = self
 
 
 class DissolveRelatedCore:
@@ -198,7 +206,7 @@ class DissolveRelatedCore:
             sourceID = shapeSource.id()
 
             if sourceID not in featuresHelperDict.keys():
-                featureHelperSource = self.createFeatureHelper(featuresHelperDict, shapeSource)
+                featureHelperSource = FeatureHelper(featuresHelperDict, shapeSource)
             else:
                 featureHelperSource = featuresHelperDict[sourceID]
 
@@ -211,7 +219,7 @@ class DissolveRelatedCore:
                     continue
 
                 if relateID not in featuresHelperDict.keys():
-                    featureHelperRelate = self.createFeatureHelper(featuresHelperDict, shapeRelate)
+                    featureHelperRelate = FeatureHelper(featuresHelperDict, shapeRelate)
                 else:
                     featureHelperRelate = featuresHelperDict[relateID]
 
