@@ -113,6 +113,65 @@ class DissolveRelatedCore:
         finally:
             return resultList
 
+    def populateRelationsDictionary(self, sourceID, relateID):
+        totalUsedList = self.getDictKeyValueList()
+        # If source is not used
+        if sourceID not in totalUsedList:
+            # If related is not used, create new relation
+            if relateID not in totalUsedList:
+                self.relationsDict[sourceID] = [relateID]
+            # If related is used as source, append source as related
+            elif relateID in self.relationsDict.keys():
+                self.relationsDict[relateID].append(sourceID)
+            # If related is used in other relation, append source as related to that relation
+            else:
+                self.relationsDict[self.getKey(relateID)].append(sourceID)
+        # If source used as source
+        elif sourceID in self.relationsDict.keys():
+            # If related is not used, append to source
+            if relateID not in totalUsedList:
+                self.relationsDict[sourceID].append(relateID)
+            # If related is used as source, append related with its relation
+            elif relateID in self.relationsDict.keys():
+                self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
+                                               self.relationsDict[relateID] + \
+                                               [relateID]
+                self.relationsDict.pop(relateID)
+            # If related used as related, append parent of its relation
+            else:
+                relateParentID = self.getKey(relateID)
+                self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
+                                               self.relationsDict[relateParentID] + \
+                                               [relateParentID]
+                self.relationsDict.pop(relateParentID)
+        # If source is used as related
+        else:
+            # If related is not used, append to parent of source
+            if relateID not in totalUsedList:
+                self.relationsDict[self.getKey(sourceID)].append(relateID)
+            # If related is used as source, append parent of source with its relation
+            elif relateID in self.relationsDict.keys():
+                sourceParentID = self.getKey(sourceID)
+                if sourceParentID == relateID:
+                    return
+
+                self.relationsDict[relateID] = self.relationsDict[relateID] + \
+                                               self.relationsDict[sourceParentID] + \
+                                               [sourceParentID]
+                self.relationsDict.pop(sourceParentID)
+            # If related is used as related, append parent of source with its relation to that relation
+            else:
+                sourceParentID = self.getKey(sourceID)
+                relateParentID = self.getKey(relateID)
+                if sourceParentID == relateParentID:
+                    return
+
+                self.relationsDict[relateParentID] = \
+                    self.relationsDict[relateParentID] + \
+                    self.relationsDict[sourceParentID] + \
+                    [sourceParentID]
+                self.relationsDict.pop(sourceParentID)
+
     def getMultipartRelations(self):
         for shapeSource in self.outputLayer.getFeatures():
             sourceID = shapeSource.id()
@@ -127,78 +186,9 @@ class DissolveRelatedCore:
 
                 # If intersected
                 if engine.intersects(shapeRelate.geometry().constGet()):
-                    totalUsedList = self.getDictKeyValueList()
-
-                    # If source is not used
-                    if sourceID not in totalUsedList:
-                        # If related is not used, create new relation
-                        if relateID not in totalUsedList:
-                            self.relationsDict[sourceID] = [relateID]
-                        # If related is used as source, append source as related
-                        elif relateID in self.relationsDict.keys():
-                            self.relationsDict[relateID].append(sourceID)
-                        # If related is used in other relation, append source as related to that relation
-                        else:
-                            self.relationsDict[self.getKey(relateID)].append(sourceID)
-                    # If source used as source
-                    elif sourceID in self.relationsDict.keys():
-                        # If related is not used, append to source
-                        if relateID not in totalUsedList:
-                            self.relationsDict[sourceID].append(relateID)
-                        # If related is used as source, append related with its relation
-                        elif relateID in self.relationsDict.keys():
-                            self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
-                                self.relationsDict[relateID] + \
-                                [relateID]
-                            self.relationsDict.pop(relateID)
-                        # If related used as related, append parent of its relation
-                        else:
-                            relateParentID = self.getKey(relateID)
-                            self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
-                                self.relationsDict[relateParentID] + \
-                                [relateParentID]
-                            self.relationsDict.pop(relateParentID)
-                    # If source is used as related
-                    else:
-                        # If related is not used, append to parent of source
-                        if relateID not in totalUsedList:
-                            self.relationsDict[self.getKey(sourceID)].append(relateID)
-                        # If related is used as source, append parent of source with its relation
-                        elif relateID in self.relationsDict.keys():
-                            sourceParentID = self.getKey(sourceID)
-                            if sourceParentID == relateID:
-                                continue
-
-                            self.relationsDict[relateID] = self.relationsDict[relateID] + \
-                                self.relationsDict[sourceParentID] + \
-                                [sourceParentID]
-                            self.relationsDict.pop(sourceParentID)
-                        # If related is used as related, append parent of source with its relation to that relation
-                        else:
-                            sourceParentID = self.getKey(sourceID)
-                            relateParentID = self.getKey(relateID)
-                            if sourceParentID == relateParentID:
-                                continue
-
-                            self.relationsDict[relateParentID] = \
-                                self.relationsDict[relateParentID] + \
-                                self.relationsDict[sourceParentID] + \
-                                [sourceParentID]
-                            self.relationsDict.pop(sourceParentID)
+                    self.populateRelationsDictionary(sourceID, relateID)
 
                 self.progress.setValue(self.progress.value() + 1)
-
-    def createFeatureHelper(self, dictHelper, shape):
-        shapeID = shape.id()
-        featureHelper = FeatureHelper(shapeID)
-        dictHelper[shapeID] = featureHelper
-        geometry = shape.geometry()
-
-        for part in geometry.parts():
-            featureHelper.nodeList.append(Node(shapeID, part[0]))
-            featureHelper.nodeList.append(Node(shapeID, part[-1]))
-
-        return featureHelper
 
     def getSinglepartRelations(self):
         featuresHelperDict = {}
@@ -244,76 +234,9 @@ class DissolveRelatedCore:
 
                 relateID = node.node.id
                 totalUsedList = self.getDictKeyValueList()
-
-                # If source is not used
-                if sourceID not in totalUsedList:
-                    # If related is not used, create new relation
-                    if relateID not in totalUsedList:
-                        self.relationsDict[sourceID] = [relateID]
-                    # If related is used as source, append source as related
-                    elif relateID in self.relationsDict.keys():
-                        self.relationsDict[relateID].append(sourceID)
-                    # If related is used in other relation, append source as related to that relation
-                    else:
-                        self.relationsDict[self.getKey(relateID)].append(sourceID)
-                # If source used as source
-                elif sourceID in self.relationsDict.keys():
-                    # If related is not used, append to source
-                    if relateID not in totalUsedList:
-                        self.relationsDict[sourceID].append(relateID)
-                    # If related is used as source, append related with its relation
-                    elif relateID in self.relationsDict.keys():
-                        self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
-                            self.relationsDict[relateID] + \
-                            [relateID]
-                        self.relationsDict.pop(relateID)
-                    # If related used as related, append parent of its relation
-                    else:
-                        relateParentID = self.getKey(relateID)
-                        self.relationsDict[sourceID] = self.relationsDict[sourceID] + \
-                            self.relationsDict[relateParentID] + \
-                            [relateParentID]
-                        self.relationsDict.pop(relateParentID)
-                # If source is used as related
-                else:
-                    # If related is not used, append to parent of source
-                    if relateID not in totalUsedList:
-                        self.relationsDict[self.getKey(sourceID)].append(relateID)
-                    # If related is used as source, append parent of source with its relation
-                    elif relateID in self.relationsDict.keys():
-                        sourceParentID = self.getKey(sourceID)
-                        if sourceParentID == relateID:
-                            continue
-
-                        self.relationsDict[relateID] = self.relationsDict[relateID] + \
-                            self.relationsDict[sourceParentID] + \
-                            [sourceParentID]
-                        self.relationsDict.pop(sourceParentID)
-                    # If related is used as related, append parent of source with its relation to that relation
-                    else:
-                        sourceParentID = self.getKey(sourceID)
-                        relateParentID = self.getKey(relateID)
-                        if sourceParentID == relateParentID:
-                            continue
-
-                        self.relationsDict[relateParentID] = \
-                            self.relationsDict[relateParentID] + \
-                            self.relationsDict[sourceParentID] + \
-                            [sourceParentID]
-                        self.relationsDict.pop(sourceParentID)
+                self.populateRelationsDictionary(sourceID, relateID)
 
             self.progress.setValue(self.progress.value() + 1)
-
-    def extractNodeRelations(self, coreID, node, relationsList, featuresHelperDict):
-        if node.id not in relationsList:
-            relationsList.append(node.id)
-
-        featureHelper = featuresHelperDict[node.id]
-        for nodeRelate in featureHelper.nodeList:
-            if (node.node is None) or (node.node.id == coreID):
-                continue
-
-            self.extractNodeRelations(coreID, node.node, relationsList, featuresHelperDict)
 
     def getRelations(self):
         self.progress.setValue(0)
