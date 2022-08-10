@@ -6,11 +6,11 @@
 name=Dissolve Related
 qgisMinimumVersion=3.0
 description=This plugin allows dissolving only connected objects
-version=1.1
+version=1.2
 author=Piotr Andryk
 email=andryk.p@wp.pl
 
-about=Existing QGIS Dissolve functions allow dissolving objects based on shared attribute. As a result you receive a new layer with multipart objects. Dissolve Related plugin dissolves only connected features. Thus, as a result you receive a layer, where only connected features are dissolved. The rest of features are intact - even if they share attribute values.
+about=Existing QGIS Dissolve functions allow dissolving objects based on shared attribute. As a result you receive a new layer with multipart objects. Dissolve Related plugin dissolves only connected features. Thus, as a result you receive a layer, where only connected features are dissolved. The rest of features are intact - even if they share attribute values.</br>There is also a dedicated to arc geometry function (keep arcs singlepart checkbox), which dissolves only arcs that are connected to up to two other arcs, related by common first or last node. It creates dissolved singlepart arcs. Multipart to singlepart QGIS function will not divide such objects to their previous state.
 
 tracker=https://github.com/pandryk/PythonRepo/issues
 repository=https://github.com/pandryk/PythonRepo/tree/main/dissolve_related
@@ -20,7 +20,7 @@ repository=https://github.com/pandryk/PythonRepo/tree/main/dissolve_related
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=1.1 </br> - OK button changed to Apply button. </br> - Report of algorithm success on message bar.
+changelog=1.1 </br> - OK button changed to Apply button. </br> - Report of algorithm success on message bar. </br>1.2 </br> - New feature - keep arcs singlepart
 
 # Tags are comma separated with spaces allowed
 tags=python,analysis,dissolve,merge,attribute
