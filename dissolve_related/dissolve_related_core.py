@@ -256,6 +256,12 @@ class DissolveRelatedCore:
         feature.setGeometry(geometry)
         return feature
 
+    def mergeLines(self, geometry):
+        newGeometry = QgsGeometry()
+        newGeometry.set(geometry)
+        newGeometry = QgsGeometry.mergeLines(newGeometry)
+        return newGeometry
+
     def dissolveFeatures(self):
         newFeaturesList = []
         self.outputLayer.beginEditCommand("Dissolving features...")
@@ -281,9 +287,15 @@ class DissolveRelatedCore:
 
                     engine = QgsGeometry.createGeometryEngine(sourceGeometry.constGet())
                     engine.prepareGeometry()
+
                     newGeometry = engine.combine(relatedGeometryList)
                     if newGeometry is None:
                         continue
+
+                    if self.splitArcs:
+                        newGeometry = self.mergeLines(newGeometry)
+                        if newGeometry is None:
+                            continue
 
                     newFeature = self.createFeature(newGeometry, sourceFeature)
                     if newFeature is None:
