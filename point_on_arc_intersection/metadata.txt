@@ -1,0 +1,47 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Create points on arcs' intersection
+qgisMinimumVersion=3.0
+description=The plugin creates a new layer with points on arcs' intersection within the same layer
+version=0.1
+author=Piotr Andryk
+email=andryk.p@wp.pl
+
+about=The plugin creates a new layer with points on arcs' intersection within the same layer. You can create points on arcs' intersection: 1) with first or last node of another arc; 2) as 1) but where more than 2 arcs are connected; 3) on intersection between a body of different arcs; 4) on self-intersection of the same arc.
+
+tracker=https://github.com/pandryk/PythonRepo/issues
+repository=https://github.com/pandryk/PythonRepo/tree/main/point_on_arc_intersection
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=analysis, feature, geometry, intersection, line, point, network, polyline, shapefile, vector
+
+homepage=https://github.com/pandryk/PythonRepo
+category=Vector
+icon=icon.png
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
