@@ -22,23 +22,31 @@
  ***************************************************************************/
 """
 import os.path
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QDialogButtonBox
+from qgis.core import(
+    Qgis,
+    QgsProject,
+    QgsVectorLayer,
+    QgsWkbTypes
+)
 
 # Initialize Qt resources from file resources.py
 # Import the code for the dialog
 if __name__ == "__main__":
     from resources import *
     from point_on_arc_intersection_dialog import PointOnArcIntersectionDialog
+    from point_on_arc_intersection_core import PointOnArcIntersectionCore
 else:
     from .resources import *
     from .point_on_arc_intersection_dialog import PointOnArcIntersectionDialog
-
+    from .point_on_arc_intersection_core import PointOnArcIntersectionCore
 
 
 class PointOnArcIntersection:
     """QGIS Plugin Implementation."""
+    ComboMapDict = {}
 
     def __init__(self, iface):
         """Constructor.
@@ -71,6 +79,7 @@ class PointOnArcIntersection:
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
+        self.dlg = PointOnArcIntersectionDialog()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -86,7 +95,6 @@ class PointOnArcIntersection:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('PointOnArcIntersection', message)
-
 
     def add_action(
         self,
@@ -175,7 +183,6 @@ class PointOnArcIntersection:
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -184,15 +191,60 @@ class PointOnArcIntersection:
                 action)
             self.iface.removeToolBarIcon(action)
 
+    def prepare_layers_combobox(self):
+        layers = [layer for layer in QgsProject.instance().mapLayers(True).values()
+                  if isinstance(layer, QgsVectorLayer) and layer.geometryType() == QgsWkbTypes.LineGeometry
+                  ]
+
+        # Mapping of combo box index and layer id
+        for i in range(len(layers)):
+            self.ComboMapDict[i] = layers[i].id()
+
+        self.dlg.layerComboBox.clear()
+        self.dlg.layerComboBox.addItems([layer.name() for layer in layers])
+
+    def build_point_on_arc_intersection_core(self):
+        # Get parameters for core algorithms
+        name = self.dlg.outputLayerNameTextEdit.toPlainText().strip()
+        if name == "":
+            return
+
+        layer = QgsProject.instance().mapLayer(self.ComboMapDict[self.dlg.layerComboBox.currentIndex()])
+        if layer is None:
+            return
+
+        algorithm_list = []
+        for i in range(self.dlg.algorithmListWidget.count()):
+            item = self.dlg.fieldsListWidget.item(i)
+            if item.checkState() == Qt.Checked:
+                algorithm_list.append(item.text())
+
+        if len(algorithm_list) == 0:
+            self.iface.messageBar().pushMessage("Warning!",
+                                                "You have to pick at least one algorithm!",
+                                                level=Qgis.Warning
+                                                )
+            return
+
+        return PointOnArcIntersectionCore(layer, name, algorithm_list)
+
+    def execute_core(self):
+        core = self.build_point_on_arc_intersection_core()
 
     def run(self):
         """Run method that performs all the real work"""
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
+        if self.first_start:
             self.first_start = False
-            self.dlg = PointOnArcIntersectionDialog()
+            self.dlg.button_box.button(QDialogButtonBox.Apply).clicked.connect(self.execute_core)
+
+        # Populate layersComboBox
+        self.prepare_layers_combobox()
+
+        # Clear name
+        self.dlg.outputLayerNameTextEdit.setPlainText("")
 
         # show the dialog
         self.dlg.show()
