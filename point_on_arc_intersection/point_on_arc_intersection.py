@@ -215,7 +215,7 @@ class PointOnArcIntersection:
 
         algorithm_list = []
         for i in range(self.dlg.algorithmListWidget.count()):
-            item = self.dlg.fieldsListWidget.item(i)
+            item = self.dlg.algorithmListWidget.item(i)
             if item.checkState() == Qt.Checked:
                 algorithm_list.append(item.text())
 
@@ -230,6 +230,18 @@ class PointOnArcIntersection:
 
     def execute_core(self):
         core = self.build_point_on_arc_intersection_core()
+        if core is None:
+            return
+
+        core.execute()
+
+        if core.output_layer.isValid():
+            QgsProject.instance().addMapLayer(core.output_layer)
+
+        self.iface.messageBar().pushMessage("Success!",
+                                            "Create points on arcs\' intersection algorithms has been completed!",
+                                            level=Qgis.Success
+                                            )
 
     def run(self):
         """Run method that performs all the real work"""
@@ -249,9 +261,4 @@ class PointOnArcIntersection:
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+        self.dlg.exec_()
