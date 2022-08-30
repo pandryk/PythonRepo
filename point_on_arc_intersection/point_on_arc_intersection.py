@@ -217,7 +217,7 @@ class PointOnArcIntersection:
         for i in range(self.dlg.algorithmListWidget.count()):
             item = self.dlg.algorithmListWidget.item(i)
             if item.checkState() == Qt.Checked:
-                algorithm_list.append(item.text())
+                algorithm_list.append(i)
 
         if len(algorithm_list) == 0:
             self.iface.messageBar().pushMessage("Warning!",
@@ -226,7 +226,7 @@ class PointOnArcIntersection:
                                                 )
             return
 
-        return PointOnArcIntersectionCore(layer, name, algorithm_list)
+        return PointOnArcIntersectionCore(layer, name, algorithm_list, self.dlg.arcsNumberSpinBox.value())
 
     def execute_core(self):
         core = self.build_point_on_arc_intersection_core()
