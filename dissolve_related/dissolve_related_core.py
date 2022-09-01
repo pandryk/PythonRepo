@@ -213,7 +213,6 @@ class DissolveRelatedCore:
                     continue
 
                 relateID = node.node.id
-                totalUsedList = self.getDictKeyValueList()
                 self.populateRelationsDictionary(sourceID, relateID)
 
             self.progress.setValue(self.progress.value() + 1)

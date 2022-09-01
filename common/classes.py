@@ -18,6 +18,11 @@ class Node:
         self.id = id
         self.point = point
         self.node = node
+        self.relation_ids = []
+
+    def add_id(self, new_id):
+        if new_id not in self.relation_ids:
+            self.relation_ids.append(new_id)
 
 
 class FeatureHelper:
@@ -32,3 +37,23 @@ class FeatureHelper:
             self.nodeList.append(Node(shapeID, part[-1]))
 
         dictHelper[shapeID] = self
+
+
+# Function creates a feature helper or returns existing one for given id
+def validate_feature_helper_dict(feature_helper_dict, shape_id, shape):
+    if (feature_helper_dict is None) or (shape is None):
+        return
+
+    if shape_id not in feature_helper_dict.keys():
+        return FeatureHelper(feature_helper_dict, shape)
+    else:
+        return feature_helper_dict[shape_id]
+
+
+# Function checks if point intersects other point or multipoint
+def check_point_point_intersection(point, intersect):
+    for part in intersect.parts():
+        if point == part:
+            return True
+
+    return False
