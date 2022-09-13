@@ -24,7 +24,7 @@ from common.classes import (
 
 
 class PointOnArcIntersectionCore:
-    def __init__(self, input_layer, output_layer_name, algorithm_list, relation_number):
+    def __init__(self, input_layer, output_layer_name, algorithm_list, relation_number, label, progress):
         self.input_layer = input_layer
         self.output_layer_name = output_layer_name
         self.algorithm_list = algorithm_list
@@ -35,6 +35,8 @@ class PointOnArcIntersectionCore:
             crs=input_layer.crs()
         )
         self.relation_number = relation_number
+        self.label = label
+        self.progress = progress
         self.algorithm_dict = {
             0: self.intersect_nodes,
             1: self.intersect_node_body,
@@ -50,7 +52,13 @@ class PointOnArcIntersectionCore:
 
         self.point_list.append(new_point)
 
+
+
     def intersect_nodes(self):
+        self.label.setText("Algorithm 1)")
+        self.progress.setValue(0)
+        self.progress.setMaximum(self.input_layer.featureCount())
+
         feature_helper_dict = {}
         for shape_source in self.input_layer.getFeatures():
             source_id = shape_source.id()
@@ -74,6 +82,8 @@ class PointOnArcIntersectionCore:
                         for node2 in feature_helper_relate.nodeList:
                             if check_point_point_intersection(node2.point, intersect):
                                 node1.add_id(feature_helper_relate.id)
+
+            self.progress.setValue(self.progress.value() + 1)
 
         for feature_helper in feature_helper_dict.values():
             for node in feature_helper.nodeList:

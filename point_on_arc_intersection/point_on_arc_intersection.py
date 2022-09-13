@@ -226,7 +226,14 @@ class PointOnArcIntersection:
                                                 )
             return
 
-        return PointOnArcIntersectionCore(layer, name, algorithm_list, self.dlg.arcsNumberSpinBox.value())
+        return PointOnArcIntersectionCore(
+            layer,
+            name,
+            algorithm_list,
+            self.dlg.arcsNumberSpinBox.value(),
+            self.dlg.progressLabel,
+            self.dlg.progressBar
+        )
 
     def execute_core(self):
         core = self.build_point_on_arc_intersection_core()
@@ -257,6 +264,10 @@ class PointOnArcIntersection:
 
         # Clear name
         self.dlg.outputLayerNameTextEdit.setPlainText("")
+
+        # Reset progress
+        self.dlg.progressLabel.setText("Algorithm")
+        self.dlg.progressBar.setValue(0)
 
         # show the dialog
         self.dlg.show()
