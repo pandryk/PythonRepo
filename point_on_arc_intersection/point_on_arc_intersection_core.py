@@ -13,11 +13,11 @@
 """
 from qgis.core import (
     QgsVectorLayer,
-    QgsWkbTypes,
     QgsFeature,
     QgsGeometry
 )
 from common.classes import (
+    Node,
     validate_feature_helper_dict,
     check_point_point_intersection
 )
@@ -142,7 +142,64 @@ class PointOnArcIntersectionCore:
                     self.append_point_list(node.point)
 
     def intersect_bodies(self):
-        pass
+        self.label.setText("Algorithm 3)")
+        self.progress.setValue(0)
+        self.progress.setMaximum(self.input_layer.featureCount())
+
+        node_list = []
+        feature_helper_dict = {}
+        for shape_source in self.input_layer.getFeatures():
+            source_id = shape_source.id()
+            feature_helper_source = validate_feature_helper_dict(feature_helper_dict, source_id, shape_source)
+            engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
+            engine.prepareGeometry()
+
+            for shape_relate in self.input_layer.getFeatures():
+                relate_id = shape_relate.id()
+                if source_id == relate_id:
+                    continue
+
+                feature_helper_relate = validate_feature_helper_dict(feature_helper_dict, relate_id, shape_relate)
+                intersect = engine.intersection(shape_relate.geometry().constGet())
+                if intersect is None:
+                    continue
+
+                is_body = True
+                for node1 in feature_helper_source.nodeList:
+                    if check_point_point_intersection(node1.point, intersect):
+                        is_body = False
+                        break
+
+                if is_body:
+                    for node2 in feature_helper_relate.nodeList:
+                        if check_point_point_intersection(node2.point, intersect):
+                            is_body = False
+                            break
+
+                if is_body:
+                    for part in intersect.parts():
+                        if part.geometryType() != "Point":
+                            continue
+
+                        is_found = False
+
+                        for node in node_list:
+                            if node.point == part:
+                                is_found = True
+                                node.add_id(feature_helper_source.id)
+                                node.add_id(feature_helper_relate.id)
+
+                        if not is_found:
+                            node = Node(-1, part)
+                            node.add_id(feature_helper_source.id)
+                            node.add_id(feature_helper_relate.id)
+                            node_list.append(node)
+
+            self.progress.setValue(self.progress.value() + 1)
+
+        for node in node_list:
+            if len(node.relation_ids) + 1 >= self.relation_number:
+                self.append_point_list(node.point)
 
     def self_intersect(self):
         pass
