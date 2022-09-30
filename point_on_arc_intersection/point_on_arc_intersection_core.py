@@ -13,8 +13,11 @@
 """
 from qgis.core import (
     QgsVectorLayer,
+    QgsWkbTypes,
     QgsFeature,
-    QgsGeometry
+    QgsGeometry,
+    QgsPoint,
+    QgsLineString
 )
 from common.classes import (
     Node,
@@ -201,8 +204,41 @@ class PointOnArcIntersectionCore:
             if len(node.relation_ids) + 1 >= self.relation_number:
                 self.append_point_list(node.point)
 
+    def get_straight_layer(self):
+        inner_layer = QgsVectorLayer(
+            "LineString?index=yes",
+            "inner_layer",
+            "memory",
+            crs=self.input_layer.crs()
+        )
+        inner_layer.beginEditCommand("Creating shapes...")
+
+        for shape in self.input_layer.getFeatures():
+            geometry = shape.geometry().constGet()
+
+            for part in geometry.parts():
+                count = len(part)
+                for i in range(count):
+                    if i < count - 1:
+                        new_geometry = QgsLineString()
+                        new_geometry.addVertex(part[i])
+                        new_geometry.addVertex(part[i + 1])
+                        feature = QgsFeature()
+                        feature.setGeometry(new_geometry)
+                        inner_layer.dataProvider().addFeature(feature)
+
+        inner_layer.commitChanges()
+        return inner_layer
+
     def self_intersect(self):
-        pass
+        self.label.setText("Algorithm 3)")
+        self.progress.setValue(0)
+
+        straight_layer = self.get_straight_layer()
+        self.progress.setMaximum(straight_layer.featureCount())
+
+
+
 
     def get_relations(self):
         for index in self.algorithm_list:
