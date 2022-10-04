@@ -17,12 +17,17 @@ from qgis.core import (
     QgsFeature,
     QgsGeometry,
     QgsPoint,
-    QgsLineString
+    QgsLineString,
+    QgsField
 )
 from common.classes import (
     Node,
     validate_feature_helper_dict,
-    check_point_point_intersection
+    check_point_point_intersection,
+    get_feature_helper_dict
+)
+from PyQt5.QtCore import (
+    QVariant
 )
 
 
@@ -201,7 +206,7 @@ class PointOnArcIntersectionCore:
             self.progress.setValue(self.progress.value() + 1)
 
         for node in node_list:
-            if len(node.relation_ids) + 1 >= self.relation_number:
+            if len(node.relation_ids) >= self.relation_number:
                 self.append_point_list(node.point)
 
     def get_straight_layer(self):
@@ -211,6 +216,8 @@ class PointOnArcIntersectionCore:
             "memory",
             crs=self.input_layer.crs()
         )
+        inner_layer.dataProvider().addAttributes([QgsField("SourceID", QVariant.Int)])
+        inner_layer.updateFields()
         inner_layer.beginEditCommand("Creating shapes...")
 
         for shape in self.input_layer.getFeatures():
@@ -225,20 +232,94 @@ class PointOnArcIntersectionCore:
                         new_geometry.addVertex(part[i + 1])
                         feature = QgsFeature()
                         feature.setGeometry(new_geometry)
+                        feature.setFields(inner_layer.fields())
+                        feature["SourceID"] = shape.id()
                         inner_layer.dataProvider().addFeature(feature)
 
         inner_layer.commitChanges()
         return inner_layer
 
     def self_intersect(self):
-        self.label.setText("Algorithm 3)")
+        self.label.setText("Algorithm 4)")
         self.progress.setValue(0)
 
         straight_layer = self.get_straight_layer()
+        node_list = []
         self.progress.setMaximum(straight_layer.featureCount())
 
+        feature_helper_dict = get_feature_helper_dict(straight_layer)
+        for shape_source in straight_layer.getFeatures():
+            source_id = shape_source.id()
+            feature_helper_source = feature_helper_dict[source_id]
+            engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
+            engine.prepareGeometry()
 
+            for shape_relate in straight_layer.getFeatures():
+                relate_id = shape_relate.id()
+                if (source_id == relate_id) or (shape_source["SourceID"] != shape_relate["SourceID"]):
+                    continue
 
+                feature_helper_relate = feature_helper_dict[relate_id]
+                intersect = engine.intersection(shape_relate.geometry().constGet())
+
+                if intersect is None or intersect.isEmpty():
+                    continue
+
+                is_body = True
+                for node1 in feature_helper_source.nodeList:
+                    if check_point_point_intersection(node1.point, intersect):
+                        is_body = False
+                        is_found = False
+
+                        for node in node_list:
+                            if node.point == node1.point:
+                                is_found = True
+                                node.add_id(feature_helper_source.id)
+                                node.add_id(feature_helper_relate.id)
+
+                        if not is_found:
+                            node = Node(-1, node1.point)
+                            node.add_id(feature_helper_source.id)
+                            node.add_id(feature_helper_relate.id)
+                            node_list.append(node)
+
+                if is_body:
+                    for part in intersect.parts():
+                        if part.geometryType() != "Point":
+                            continue
+
+                        is_found = False
+
+                        for node in node_list:
+                            if node.point == part:
+                                is_found = True
+                                node.add_id(feature_helper_source.id)
+                                node.add_id(feature_helper_relate.id)
+
+                        if not is_found:
+                            node = Node(-1, part)
+                            node.add_id(feature_helper_source.id)
+                            node.add_id(feature_helper_relate.id)
+                            node.relation_ids.append(-1)
+                            node_list.append(node)
+
+            # Relation with a node of original source feature
+            shp = self.input_layer.getFeature(shape_source["SourceID"])
+            if shp is None:
+                continue
+
+            geometry = shp.geometry()
+            for part in geometry.parts():
+                if part[0] == part[-1]:
+                    for node in node_list:
+                        if node.point == part[0]:
+                            node.relation_ids.append(-1)
+
+            self.progress.setValue(self.progress.value() + 1)
+
+        for node in node_list:
+            if len(node.relation_ids) >= self.relation_number:
+                self.append_point_list(node.point)
 
     def get_relations(self):
         for index in self.algorithm_list:

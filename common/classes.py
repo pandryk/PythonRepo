@@ -57,3 +57,13 @@ def check_point_point_intersection(point, intersect):
             return True
 
     return False
+
+
+# Function fills feature helper dictionary based on provided arcs' layer
+def get_feature_helper_dict(layer):
+    feature_helper_dict = {}
+
+    for shape in layer.getFeatures():
+        FeatureHelper(feature_helper_dict, shape)
+
+    return feature_helper_dict
