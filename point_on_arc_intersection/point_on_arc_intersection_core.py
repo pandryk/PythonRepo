@@ -22,7 +22,6 @@ from qgis.core import (
 )
 from common.classes import (
     Node,
-    validate_feature_helper_dict,
     check_point_point_intersection,
     get_feature_helper_dict
 )
@@ -52,6 +51,13 @@ class PointOnArcIntersectionCore:
             3: self.self_intersect
         }
         self.point_list = []
+        self.feature_helper_dict = get_feature_helper_dict(self.input_layer)
+
+    def clear_feature_helper_relations(self):
+        for helper in self.feature_helper_dict.values():
+            for node in helper.nodeList:
+                node.node = None
+                node.relation_ids.clear()
 
     def append_point_list(self, new_point):
         for point in self.point_list:
@@ -65,10 +71,9 @@ class PointOnArcIntersectionCore:
         self.progress.setValue(0)
         self.progress.setMaximum(self.input_layer.featureCount())
 
-        feature_helper_dict = {}
         for shape_source in self.input_layer.getFeatures():
             source_id = shape_source.id()
-            feature_helper_source = validate_feature_helper_dict(feature_helper_dict, source_id, shape_source)
+            feature_helper_source = self.feature_helper_dict[source_id]
             engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
             engine.prepareGeometry()
 
@@ -78,7 +83,7 @@ class PointOnArcIntersectionCore:
                 if source_id == relate_id:
                     continue
 
-                feature_helper_relate = validate_feature_helper_dict(feature_helper_dict, relate_id, shape_relate)
+                feature_helper_relate = self.feature_helper_dict[relate_id]
                 intersect = engine.intersection(shape_relate.geometry().constGet())
                 if intersect is None:
                     continue
@@ -87,11 +92,11 @@ class PointOnArcIntersectionCore:
                     if check_point_point_intersection(node1.point, intersect):
                         for node2 in feature_helper_relate.nodeList:
                             if check_point_point_intersection(node2.point, intersect):
-                                node1.add_id(feature_helper_relate.id)
+                                node1.add_id(relate_id)
 
             self.progress.setValue(self.progress.value() + 1)
 
-        for feature_helper in feature_helper_dict.values():
+        for feature_helper in self.feature_helper_dict.values():
             for node in feature_helper.nodeList:
                 if len(node.relation_ids) + 1 >= self.relation_number:
                     self.append_point_list(node.point)
@@ -101,10 +106,9 @@ class PointOnArcIntersectionCore:
         self.progress.setValue(0)
         self.progress.setMaximum(self.input_layer.featureCount())
 
-        feature_helper_dict = {}
         for shape_source in self.input_layer.getFeatures():
             source_id = shape_source.id()
-            feature_helper_source = validate_feature_helper_dict(feature_helper_dict, source_id, shape_source)
+            feature_helper_source = self.feature_helper_dict[source_id]
             engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
             engine.prepareGeometry()
 
@@ -113,7 +117,7 @@ class PointOnArcIntersectionCore:
                 if source_id == relate_id:
                     continue
 
-                feature_helper_relate = validate_feature_helper_dict(feature_helper_dict, relate_id, shape_relate)
+                feature_helper_relate = self.feature_helper_dict[relate_id]
                 intersect = engine.intersection(shape_relate.geometry().constGet())
                 if intersect is None:
                     continue
@@ -128,7 +132,7 @@ class PointOnArcIntersectionCore:
                                 break
 
                         if is_body:
-                            node1.add_id(feature_helper_relate.id)
+                            node1.add_id(relate_id)
 
                 for node1 in feature_helper_relate.nodeList:
                     if check_point_point_intersection(node1.point, intersect):
@@ -140,11 +144,11 @@ class PointOnArcIntersectionCore:
                                 break
 
                         if is_body:
-                            node1.add_id(feature_helper_source.id)
+                            node1.add_id(source_id)
 
             self.progress.setValue(self.progress.value() + 1)
 
-        for feature_helper in feature_helper_dict.values():
+        for feature_helper in self.feature_helper_dict.values():
             for node in feature_helper.nodeList:
                 if len(node.relation_ids) + 1 >= self.relation_number:
                     self.append_point_list(node.point)
@@ -155,10 +159,9 @@ class PointOnArcIntersectionCore:
         self.progress.setMaximum(self.input_layer.featureCount())
 
         node_list = []
-        feature_helper_dict = {}
         for shape_source in self.input_layer.getFeatures():
             source_id = shape_source.id()
-            feature_helper_source = validate_feature_helper_dict(feature_helper_dict, source_id, shape_source)
+            feature_helper_source = self.feature_helper_dict[source_id]
             engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
             engine.prepareGeometry()
 
@@ -167,7 +170,7 @@ class PointOnArcIntersectionCore:
                 if source_id == relate_id:
                     continue
 
-                feature_helper_relate = validate_feature_helper_dict(feature_helper_dict, relate_id, shape_relate)
+                feature_helper_relate = self.feature_helper_dict[relate_id]
                 intersect = engine.intersection(shape_relate.geometry().constGet())
                 if intersect is None:
                     continue
@@ -194,13 +197,13 @@ class PointOnArcIntersectionCore:
                         for node in node_list:
                             if node.point == part:
                                 is_found = True
-                                node.add_id(feature_helper_source.id)
-                                node.add_id(feature_helper_relate.id)
+                                node.add_id(source_id)
+                                node.add_id(relate_id)
 
                         if not is_found:
                             node = Node(-1, part)
-                            node.add_id(feature_helper_source.id)
-                            node.add_id(feature_helper_relate.id)
+                            node.add_id(source_id)
+                            node.add_id(relate_id)
                             node_list.append(node)
 
             self.progress.setValue(self.progress.value() + 1)
@@ -304,15 +307,14 @@ class PointOnArcIntersectionCore:
                             node_list.append(node)
 
             # Relation with a node of original source feature
-            shp = self.input_layer.getFeature(shape_source["SourceID"])
-            if shp is None:
-                continue
+            original_feature_helper = self.feature_helper_dict[shape_source["SourceID"]]
+            counter = len(original_feature_helper.nodeList)
+            for i in range(counter):
+                if (i < counter - 1) and \
+                        (original_feature_helper.nodeList[i].point == original_feature_helper.nodeList[i + 1].point):
 
-            geometry = shp.geometry()
-            for part in geometry.parts():
-                if part[0] == part[-1]:
                     for node in node_list:
-                        if node.point == part[0]:
+                        if node.point == original_feature_helper.nodeList[i].point:
                             node.relation_ids.append(-1)
 
             self.progress.setValue(self.progress.value() + 1)
@@ -323,6 +325,7 @@ class PointOnArcIntersectionCore:
 
     def get_relations(self):
         for index in self.algorithm_list:
+            self.clear_feature_helper_relations()
             self.algorithm_dict[index]()
 
     def create_shapes(self):
