@@ -20,8 +20,8 @@ class Node:
         self.node = node
         self.relation_ids = []
 
-    def add_id(self, new_id):
-        if new_id not in self.relation_ids:
+    def add_id(self, new_id, original=True):
+        if not original or (new_id not in self.relation_ids):
             self.relation_ids.append(new_id)
 
 

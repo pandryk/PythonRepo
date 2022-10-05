@@ -50,21 +50,17 @@ class PointOnArcIntersectionCore:
             2: self.intersect_bodies,
             3: self.self_intersect
         }
-        self.point_list = []
         self.feature_helper_dict = get_feature_helper_dict(self.input_layer)
+        self.node_list = []
 
-    def clear_feature_helper_relations(self):
-        for helper in self.feature_helper_dict.values():
-            for node in helper.nodeList:
-                node.node = None
-                node.relation_ids.clear()
+    def get_node(self, point):
+        for node in self.node_list:
+            if node.point == point:
+                return node
 
-    def append_point_list(self, new_point):
-        for point in self.point_list:
-            if point == new_point:
-                return
-
-        self.point_list.append(new_point)
+        node = Node(-1, point)
+        self.node_list.append(node)
+        return node
 
     def intersect_nodes(self):
         self.label.setText("Algorithm 1)")
@@ -85,21 +81,18 @@ class PointOnArcIntersectionCore:
 
                 feature_helper_relate = self.feature_helper_dict[relate_id]
                 intersect = engine.intersection(shape_relate.geometry().constGet())
-                if intersect is None:
+                if intersect is None or intersect.isEmpty():
                     continue
 
                 for node1 in feature_helper_source.nodeList:
                     if check_point_point_intersection(node1.point, intersect):
                         for node2 in feature_helper_relate.nodeList:
-                            if check_point_point_intersection(node2.point, intersect):
-                                node1.add_id(relate_id)
+                            if node1.point == node2.point and check_point_point_intersection(node2.point, intersect):
+                                node = self.get_node(node1.point)
+                                node.add_id(source_id)
+                                node.add_id(relate_id)
 
             self.progress.setValue(self.progress.value() + 1)
-
-        for feature_helper in self.feature_helper_dict.values():
-            for node in feature_helper.nodeList:
-                if len(node.relation_ids) + 1 >= self.relation_number:
-                    self.append_point_list(node.point)
 
     def intersect_node_body(self):
         self.label.setText("Algorithm 2)")
@@ -119,7 +112,7 @@ class PointOnArcIntersectionCore:
 
                 feature_helper_relate = self.feature_helper_dict[relate_id]
                 intersect = engine.intersection(shape_relate.geometry().constGet())
-                if intersect is None:
+                if intersect is None or intersect.isEmpty():
                     continue
 
                 for node1 in feature_helper_source.nodeList:
@@ -172,7 +165,7 @@ class PointOnArcIntersectionCore:
 
                 feature_helper_relate = self.feature_helper_dict[relate_id]
                 intersect = engine.intersection(shape_relate.geometry().constGet())
-                if intersect is None:
+                if intersect is None or intersect.isEmpty():
                     continue
 
                 is_body = True
@@ -325,16 +318,18 @@ class PointOnArcIntersectionCore:
 
     def get_relations(self):
         for index in self.algorithm_list:
-            self.clear_feature_helper_relations()
             self.algorithm_dict[index]()
 
     def create_shapes(self):
         new_features_list = []
         self.output_layer.beginEditCommand("Creating shapes...")
         try:
-            for point in self.point_list:
+            for node in self.node_list:
+                if len(node.relation_ids) < self.relation_number:
+                    continue
+
                 feature = QgsFeature()
-                feature.setGeometry(point)
+                feature.setGeometry(node.point)
                 new_features_list.append(feature)
 
             self.output_layer.dataProvider().addFeatures(new_features_list)
