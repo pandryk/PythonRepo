@@ -19,6 +19,7 @@ class Node:
         self.point = point
         self.node = node
         self.relation_ids = []
+        self.relation_counter = 0
 
     def add_id(self, new_id, original=True):
         if not original or (new_id not in self.relation_ids):

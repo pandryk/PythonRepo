@@ -87,12 +87,16 @@ class PointOnArcIntersectionCore:
                 for node1 in feature_helper_source.nodeList:
                     if check_point_point_intersection(node1.point, intersect):
                         for node2 in feature_helper_relate.nodeList:
-                            if node1.point == node2.point and check_point_point_intersection(node2.point, intersect):
+                            if node1.point == node2.point:
                                 node = self.get_node(node1.point)
                                 node.add_id(source_id)
                                 node.add_id(relate_id)
 
             self.progress.setValue(self.progress.value() + 1)
+
+        for node in self.node_list:
+            node.relation_counter = len(node.relation_ids)
+            node.relation_ids.clear()
 
     def intersect_node_body(self):
         self.label.setText("Algorithm 2)")
@@ -325,7 +329,7 @@ class PointOnArcIntersectionCore:
         self.output_layer.beginEditCommand("Creating shapes...")
         try:
             for node in self.node_list:
-                if len(node.relation_ids) < self.relation_number:
+                if node.relation_counter < self.relation_number:
                     continue
 
                 feature = QgsFeature()
