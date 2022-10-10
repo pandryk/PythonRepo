@@ -129,26 +129,13 @@ class PointOnArcIntersectionCore:
                                 break
 
                         if is_body:
-                            node1.add_id(relate_id)
-
-                for node1 in feature_helper_relate.nodeList:
-                    if check_point_point_intersection(node1.point, intersect):
-                        is_body = True
-
-                        for node2 in feature_helper_source.nodeList:
-                            if check_point_point_intersection(node2.point, intersect):
-                                is_body = False
-                                break
-
-                        if is_body:
-                            node1.add_id(source_id)
+                            node = self.get_node(node1.point)
+                            if node.relation_counter == 0:
+                                node.relation_counter += 2
+                            else:
+                                node.relation_counter += 1
 
             self.progress.setValue(self.progress.value() + 1)
-
-        for feature_helper in self.feature_helper_dict.values():
-            for node in feature_helper.nodeList:
-                if len(node.relation_ids) + 1 >= self.relation_number:
-                    self.append_point_list(node.point)
 
     def intersect_bodies(self):
         self.label.setText("Algorithm 3)")
