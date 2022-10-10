@@ -142,7 +142,6 @@ class PointOnArcIntersectionCore:
         self.progress.setValue(0)
         self.progress.setMaximum(self.input_layer.featureCount())
 
-        node_list = []
         for shape_source in self.input_layer.getFeatures():
             source_id = shape_source.id()
             feature_helper_source = self.feature_helper_dict[source_id]
@@ -176,25 +175,10 @@ class PointOnArcIntersectionCore:
                         if part.geometryType() != "Point":
                             continue
 
-                        is_found = False
-
-                        for node in node_list:
-                            if node.point == part:
-                                is_found = True
-                                node.add_id(source_id)
-                                node.add_id(relate_id)
-
-                        if not is_found:
-                            node = Node(-1, part)
-                            node.add_id(source_id)
-                            node.add_id(relate_id)
-                            node_list.append(node)
+                        node = self.get_node(part)
+                        node.relation_counter += 1
 
             self.progress.setValue(self.progress.value() + 1)
-
-        for node in node_list:
-            if len(node.relation_ids) >= self.relation_number:
-                self.append_point_list(node.point)
 
     def get_straight_layer(self):
         inner_layer = QgsVectorLayer(
