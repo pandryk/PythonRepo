@@ -58,7 +58,7 @@ class PointOnArcIntersectionCore:
             if node.point == point:
                 return node
 
-        node = Node(-1, point)
+        node = Node(len(self.node_list), point)
         self.node_list.append(node)
         return node
 
@@ -66,9 +66,11 @@ class PointOnArcIntersectionCore:
         self.label.setText("Algorithm 1)")
         self.progress.setValue(0)
         self.progress.setMaximum(self.input_layer.featureCount())
+        analysed_features = []
 
         for shape_source in self.input_layer.getFeatures():
             source_id = shape_source.id()
+            analysed_features.append(source_id)
             feature_helper_source = self.feature_helper_dict[source_id]
             engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
             engine.prepareGeometry()
@@ -76,7 +78,7 @@ class PointOnArcIntersectionCore:
             for shape_relate in self.input_layer.getFeatures():
                 relate_id = shape_relate.id()
 
-                if source_id == relate_id:
+                if relate_id in analysed_features:
                     continue
 
                 feature_helper_relate = self.feature_helper_dict[relate_id]
@@ -102,16 +104,19 @@ class PointOnArcIntersectionCore:
         self.label.setText("Algorithm 2)")
         self.progress.setValue(0)
         self.progress.setMaximum(self.input_layer.featureCount())
+        analysed_features = []
 
         for shape_source in self.input_layer.getFeatures():
             source_id = shape_source.id()
+            analysed_features.append(source_id)
             feature_helper_source = self.feature_helper_dict[source_id]
             engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
             engine.prepareGeometry()
 
             for shape_relate in self.input_layer.getFeatures():
                 relate_id = shape_relate.id()
-                if source_id == relate_id:
+
+                if relate_id in analysed_features:
                     continue
 
                 feature_helper_relate = self.feature_helper_dict[relate_id]
@@ -130,6 +135,7 @@ class PointOnArcIntersectionCore:
 
                         if is_body:
                             node = self.get_node(node1.point)
+
                             if node.relation_counter == 0:
                                 node.relation_counter += 2
                             else:
