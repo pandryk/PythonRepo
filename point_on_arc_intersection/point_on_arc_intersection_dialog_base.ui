@@ -107,7 +107,7 @@
      <string>4) A feature self-intersects.</string>
     </property>
     <property name="checkState">
-     <enum>Checked</enum>
+     <enum>Unchecked</enum>
     </property>
    </item>
   </widget>
