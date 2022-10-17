@@ -13,10 +13,8 @@
 """
 from qgis.core import (
     QgsVectorLayer,
-    QgsWkbTypes,
     QgsFeature,
     QgsGeometry,
-    QgsPoint,
     QgsLineString,
     QgsField
 )
@@ -232,17 +230,19 @@ class PointOnArcIntersectionCore:
         straight_layer = self.get_straight_layer()
         node_list = []
         self.progress.setMaximum(straight_layer.featureCount())
+        analysed_features = []
 
         feature_helper_dict = get_feature_helper_dict(straight_layer)
         for shape_source in straight_layer.getFeatures():
             source_id = shape_source.id()
+            analysed_features.append(source_id)
             feature_helper_source = feature_helper_dict[source_id]
             engine = QgsGeometry.createGeometryEngine(shape_source.geometry().constGet())
             engine.prepareGeometry()
 
             for shape_relate in straight_layer.getFeatures():
                 relate_id = shape_relate.id()
-                if (source_id == relate_id) or (shape_source["SourceID"] != shape_relate["SourceID"]):
+                if relate_id in analysed_features or (shape_source["SourceID"] != shape_relate["SourceID"]):
                     continue
 
                 feature_helper_relate = feature_helper_dict[relate_id]
@@ -252,19 +252,20 @@ class PointOnArcIntersectionCore:
                     continue
 
                 is_body = True
+
                 for node1 in feature_helper_source.nodeList:
                     if check_point_point_intersection(node1.point, intersect):
                         is_body = False
                         is_found = False
 
                         for node in node_list:
-                            if node.point == node1.point:
+                            if (node.point == node1.point) and (node.id == shape_source["SourceID"]):
                                 is_found = True
                                 node.add_id(feature_helper_source.id)
                                 node.add_id(feature_helper_relate.id)
 
                         if not is_found:
-                            node = Node(-1, node1.point)
+                            node = Node(shape_source["SourceID"], node1.point)
                             node.add_id(feature_helper_source.id)
                             node.add_id(feature_helper_relate.id)
                             node_list.append(node)
@@ -277,34 +278,56 @@ class PointOnArcIntersectionCore:
                         is_found = False
 
                         for node in node_list:
-                            if node.point == part:
+                            if (node.point == part) and (node.id == shape_source["SourceID"]):
                                 is_found = True
-                                node.add_id(feature_helper_source.id)
-                                node.add_id(feature_helper_relate.id)
+                                node.relation_counter += 1
 
                         if not is_found:
-                            node = Node(-1, part)
-                            node.add_id(feature_helper_source.id)
-                            node.add_id(feature_helper_relate.id)
-                            node.relation_ids.append(-1)
+                            node = Node(shape_source["SourceID"], part)
+                            node.relation_counter += 2
                             node_list.append(node)
 
-            # Relation with a node of original source feature
-            original_feature_helper = self.feature_helper_dict[shape_source["SourceID"]]
+            self.progress.setValue(self.progress.value() + 1)
+
+        for local_node in node_list:
+            length = len(local_node.relation_ids)
+            if length % 2 == 0:
+                local_node.relation_counter += length // 2
+            else:
+                local_node.relation_counter += length // 2 + 1
+
+            if local_node.relation_counter < 2:
+                continue
+
+            is_found = False
+            for node in self.node_list:
+                if local_node.point == node.point:
+                    is_found = True
+                    node.relation_counter += local_node.relation_counter
+                    break
+
+            if not is_found:
+                local_node.relation_ids.clear()
+                self.node_list.append(local_node)
+
+        # Relation with a node of original source feature => first and last node are in the same position
+        for original_feature_helper in self.feature_helper_dict.values():
             counter = len(original_feature_helper.nodeList)
             for i in range(counter):
                 if (i < counter - 1) and \
                         (original_feature_helper.nodeList[i].point == original_feature_helper.nodeList[i + 1].point):
 
-                    for node in node_list:
+                    is_found = False
+
+                    for node in self.node_list:
                         if node.point == original_feature_helper.nodeList[i].point:
-                            node.relation_ids.append(-1)
+                            is_found = True
+                            node.relation_counter += 2
 
-            self.progress.setValue(self.progress.value() + 1)
-
-        for node in node_list:
-            if len(node.relation_ids) >= self.relation_number:
-                self.append_point_list(node.point)
+                    if not is_found:
+                        node = Node(original_feature_helper.nodeList[i].id, original_feature_helper.nodeList[i].point)
+                        node.relation_counter += 2
+                        self.node_list.append(node)
 
     def get_relations(self):
         for index in self.algorithm_list:
