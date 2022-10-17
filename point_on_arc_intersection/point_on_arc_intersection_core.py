@@ -18,11 +18,18 @@ from qgis.core import (
     QgsLineString,
     QgsField
 )
-from common.classes import (
-    Node,
-    check_point_point_intersection,
-    get_feature_helper_dict
-)
+if __name__ == "point_on_arc_intersection.point_on_arc_intersection_core":
+    from .classes import (
+        Node,
+        check_point_point_intersection,
+        get_feature_helper_dict
+    )
+else:
+    from common.classes import (
+        Node,
+        check_point_point_intersection,
+        get_feature_helper_dict
+    )
 from PyQt5.QtCore import (
     QVariant
 )
