@@ -6,11 +6,11 @@
 name=Create points on arcs' intersection
 qgisMinimumVersion=3.0
 description=The plugin creates a new layer with points on arcs' intersection within the same layer
-version=0.1
+version=1.0
 author=Piotr Andryk
 email=andryk.p@wp.pl
 
-about=The plugin creates a new layer with points on arcs' intersection within the same layer. You can create points on arcs' intersection: 1) by first or last node of a source feature with first or last node of another arc; 2) as 1) but where more than 2 arcs are connected; 3) on intersection between a body of different arcs; 4) on self-intersection of the same arc.
+about=The plugin creates a new layer with points on arcs' intersection within the same layer.</br>It works in similar way to Line intersections... QGIS function - when you choose the same arcs' layer. This plugin works in an extended way. You can create points on arcs' intersection:</br>1) by first or last node of a source feature with first or last node of another arc;</br>2) by first or last node of a source feature with a body of another arc;</br>3) on intersection between bodies of different arcs;</br>4) on self-intersection of the same arc.</br></br>Apart from that, you can choose the number of intersections between arcs, to create a point.
 
 tracker=https://github.com/pandryk/PythonRepo/issues
 repository=https://github.com/pandryk/PythonRepo/tree/main/point_on_arc_intersection
