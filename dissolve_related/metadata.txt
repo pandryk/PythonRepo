@@ -4,9 +4,9 @@
 
 [general]
 name=Dissolve Related
-qgisMinimumVersion=3.0
+qgisMinimumVersion=3.30
 description=This plugin allows dissolving only connected objects
-version=1.2
+version=1.3
 author=Piotr Andryk
 email=andryk.p@wp.pl
 
@@ -20,7 +20,7 @@ repository=https://github.com/pandryk/PythonRepo/tree/main/dissolve_related
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=1.1 </br> - OK button changed to Apply button. </br> - Report of algorithm success on message bar. </br>1.2 </br> - New feature - keep arcs singlepart
+changelog=1.1 </br> - OK button changed to Apply button. </br> - Report of algorithm success on message bar. </br>1.2 </br> - New feature - keep arcs singlepart. </br> 1.3 </br> Fix for QGIS Version 3.30 and above.
 
 # Tags are comma separated with spaces allowed
 tags=python,analysis,dissolve,merge,attribute

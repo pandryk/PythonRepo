@@ -27,7 +27,7 @@ class DissolveRelatedCore:
         self.fieldNames = fieldNames
         self.relationsDict = {}
         self.outputLayer = QgsVectorLayer(
-            QgsWkbTypes.displayString(int(inputLayer.wkbType())) + "?index=yes",
+            QgsWkbTypes.displayString(inputLayer.wkbType()) + "?index=yes",
             outputLayerName,
             "memory",
             crs=inputLayer.crs()
