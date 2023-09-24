@@ -18,7 +18,14 @@ from qgis.core import (
     QgsFeature,
     QgsGeometry
 )
-from common.classes import FeatureHelper
+if __name__ == "dissolve_related.dissolve_related_core":
+    from .classes import (
+        FeatureHelper
+    )
+else:
+    from common.classes import (
+        FeatureHelper
+    )
 
 
 class DissolveRelatedCore:
